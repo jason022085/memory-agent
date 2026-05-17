@@ -16,6 +16,28 @@
     *   **Sleep Update**：背景工作者定期提取碎片化的原始日誌，利用 LLM 進行 RCA（根本原因分析）與反思。
     *   **知識固化**：將多人經驗提煉為結構化的「長期記憶 (Consolidated Memory)」，並自動清理舊有的冗餘日誌。
 
+## LangGraph 工作流 (Workflow)
+
+本系統的核心推論引擎採用 **LangGraph** 進行狀態編排，確保診斷流程與記憶記錄的嚴謹性：
+
+1.  **Retrieve Node (檢索節點)**：
+    *   根據目前的設備數據與工程師輸入，自動在 ChromaDB 中進行語意搜尋。
+    *   **關鍵點**：它會同時撈取「他人的原始日誌」與「系統固化知識」，為 Agent 提供完整的背景脈絡。
+2.  **Agent Node (診斷節點)**：
+    *   使用 **Gemini 2.5 Flash** 進行邏輯推理。
+    *   結合「檢索到的歷史」與「當前異常數據」，產出專業的診斷建議與維修步驟。
+3.  **Soft Update Node (軟更新節點)**：
+    *   **非同步攔截**：在回傳結果給工程師的同時，攔截本輪的對話內容與 Tool Call 軌跡。
+    *   **無損記錄**：將這些碎片化資訊立即寫入 VDB 的 `raw_log`，確保 100% 的可追溯性，不阻塞前端回應。
+
+```mermaid
+graph LR
+    START((START)) --> Retrieve[Retrieve History]
+    Retrieve --> Agent[Diagnostic Reasoning]
+    Agent --> SoftUpdate[Soft Update Log]
+    SoftUpdate --> END((END))
+```
+
 ## 主要組件 (Components)
 
 *   `agent.py`：診斷代理核心。包含 `diagnostic_agent_node` (分析建議) 與 `soft_update_node` (即時日誌記錄)。

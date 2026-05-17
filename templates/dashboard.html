@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>半導體代理 - 區域記憶看板</title>
+    <style>
+        :root {
+            --primary-color: #003366;
+            --secondary-color: #f0f4f8;
+            --accent-color: #00a8e8;
+            --text-color: #333;
+            --card-bg: #ffffff;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--secondary-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+        }
+        header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        h1 { margin: 0; font-size: 24px; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .section-info {
+            background: var(--card-bg);
+            padding: 15px;
+            border-left: 5px solid var(--accent-color);
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        .memory-card {
+            background: var(--card-bg);
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            line-height: 1.6;
+            border: 1px solid #ddd;
+        }
+        .memory-card h3 {
+            margin-top: 0;
+            color: var(--primary-color);
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            font-size: 18px;
+        }
+        .meta {
+            font-size: 0.85em;
+            color: #666;
+            margin-bottom: 15px;
+        }
+        .content {
+            white-space: pre-wrap; /* 保留換行 */
+            background: #fafafa;
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px inset #eee;
+        }
+        .no-data {
+            text-align: center;
+            padding: 50px;
+            color: #999;
+            background: white;
+            border-radius: 8px;
+        }
+        .badge {
+            background: #28a745;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>晶圓廠代理：知識記憶看板 (Fab Agent Dashboard)</h1>
+        </header>
+
+        <div class="section-info">
+            當前檢視區域 (Section ID): {{ section_id }}
+        </div>
+
+        {% if memories %}
+            {% for mem in memories %}
+                <div class="memory-card">
+                    <div class="meta">
+                        {% if mem.type == 'consolidated' %}
+                            <span class="badge" style="background: #28a745;">已固化知識 (Consolidated)</span>
+                        {% else %}
+                            <span class="badge" style="background: #ffc107; color: #000;">原始日誌 (Raw Log)</span>
+                        {% endif %}
+                        | 來源: <strong>{{ mem.user_id }}</strong>
+                        | 時間: <span id="time-{{loop.index}}">{{ mem.timestamp }}</span>
+                    </div>
+                    <div class="content">{{ mem.content }}</div>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="no-data">
+                目前尚無已固化的長期知識。請執行睡眠更新以生成知識卡片。
+            </div>
+        {% endif %}
+    </div>
+
+    <script>
+        // 將 Epoch 毫秒轉換為可讀時間
+        document.querySelectorAll('[id^="time-"]').forEach(el => {
+            const date = new Date(parseInt(el.innerText));
+            el.innerText = date.toLocaleString('zh-TW');
+        });
+    </script>
+</body>
+</html>

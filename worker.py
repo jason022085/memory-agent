@@ -25,19 +25,18 @@ async def sleep_update_consolidator(section_id: str):
     raw_content = "\n".join(logs['documents'])
     log_ids = logs['ids']
 
-    # 2. Build Consolidation Prompt (Added multi-user context)
-    prompt = f"""You are a Fab Memory Consolidation Engine.
-Analyze the following raw equipment event logs and interactions from multiple engineers.
-Perform the following:
-1. RCA Pattern Extraction: Identify recurring failure symptoms or patterns.
-2. Operation Refinement: Summarize which actions from different users were most effective.
-3. Knowledge Solidification: Transform these fragmented logs into a high-value, 
-   structured long-term maintenance memory entry for the entire section.
+    # 2. 構建整合 Prompt (採用半導體專家人格並使用繁體中文)
+    prompt = f"""你是一位資深的半導體設備專家，專長於黃光、蝕刻與薄膜製程。
+請分析以下來自多位工程師的原始設備事件日誌與互動紀錄。
+執行以下任務：
+1. RCA 模式提取：識別重複發生的故障徵兆、感測器異常或警報模式。
+2. 操作精煉：總結不同使用者所採取的行動中，哪些 Tool Call 序列或維修步驟最為有效。
+3. 知識固化：將這些碎片化的日誌轉化為一條具備長期指導價值、結構化的設備維護記憶條目。
 
-[RAW LOGS]
+[原始日誌內容]
 {raw_content}
 
-Consolidated Memory:
+請輸出專業且簡潔的「固化知識記憶」：
 """
 
     # 3. Call LLM to reflect and consolidate

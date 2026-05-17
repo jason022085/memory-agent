@@ -9,7 +9,7 @@ async def test_shared_memory_lifecycle():
     print("=== 正在開始黃光設備課 [共享記憶] 整合測試 ===")
     
     # 0. 清理測試資料庫
-    db_path = "./chroma_db_shared_test"
+    db_path = "./chroma_db_test"
     os.environ["CHROMA_DB_PATH"] = db_path
     if os.path.exists(db_path):
         shutil.rmtree(db_path)

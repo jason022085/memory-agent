@@ -6,7 +6,7 @@ from worker import sleep_update_consolidator
 from memory import FabMemory
 
 async def test_shared_memory_lifecycle():
-    print("=== 正在開始黃光設備課 [共享記憶] 整合測試 ===")
+    print("=== 正在開始黃光設備課 [共享記憶] 整合測試 (新測資) ===")
     
     # 0. 清理測試資料庫
     db_path = "./chroma_db_test"
@@ -14,31 +14,48 @@ async def test_shared_memory_lifecycle():
     if os.path.exists(db_path):
         shutil.rmtree(db_path)
     
-    # 1. 工程師 A (Jason) 建立日誌
-    print("\n步驟 1: 工程師 A (Jason) 處理異常...")
     section_id = "SHARED_ZONE_001"
-    await run_agent("jason", section_id, {"tool": "ASML_01"}, "發現 ASML_01 雷射強度不穩，調整冷卻系統後恢復。", "thread_1")
     
-    # 2. 工程師 B (Kevin) 查詢
-    print("\n步驟 2: 工程師 B (Kevin) 應能存取 Jason 的經驗 (共享測試)...")
-    memory_db = FabMemory(persist_directory=db_path)
-    # 直接在 VDB 層級檢查
-    history = await memory_db.get_relevant_memory(section_id, "雷射強度")
-    print(f"Kevin 檢索到的歷史:\n{history}")
+    # 1. 工程師 A (Jason) 處理 LITH-SCA-04
+    print("\n步驟 1: 工程師 A (Jason) 處理 Dose Energy 異常...")
+    case_1_msg = "機台 LITH-SCA-04 發生 Dose Energy OOC Alarm，Dose baseline 似乎有飄移。"
+    case_1_data = {
+        "tool_id": "LITH-SCA-04",
+        "investigation": "確認是 Laser gas 交換後，chamber 內的 pressure tuning 沒有達到最佳化。重新做 Laser calibration 後恢復。"
+    }
+    await run_agent("jason", section_id, case_1_data, case_1_msg, "thread_1")
     
-    assert "jason" in history, "Kevin 應該要在檢索結果中看到 jason 的操作紀錄"
-    assert "調整冷卻系統" in history, "Kevin 應該要看到具體的解決方案"
+    # 2. 工程師 B (Mike) 處理 LITH-TRK-12
+    print("\n步驟 2: 工程師 B (Mike) 處理 PEB 溫度異常...")
+    case_2_msg = "LITH-TRK-12 的 PEB CH3 溫度均勻度跑掉，導致 CD variation。"
+    case_2_data = {
+        "tool_id": "LITH-TRK-12",
+        "result": "發現 Bake plate 的 Zone 4 溫度偏低，Heater resistance 阻值偏高，更換 Heater block 後恢復。"
+    }
+    await run_agent("mike", section_id, case_2_data, case_2_msg, "thread_2")
 
-    # 3. 睡眠更新 (跨使用者整合)
-    print("\n步驟 3: 執行跨使用者睡眠整合...")
+    # 3. 驗證共享檢索 (在整合前)
+    print("\n步驟 3: 驗證跨使用者檢索 (Raw Logs)...")
+    memory_db = FabMemory(persist_directory=db_path)
+    history = await memory_db.get_relevant_memory(section_id, "Dose Energy")
+    print(f"檢索到的歷史:\n{history}")
+    
+    assert "jason" in history, "應該要在檢索結果中看到 jason 的操作紀錄"
+    assert "Laser gas" in history, "應該要看到 Laser gas 相關描述"
+
+    # 4. 執行睡眠更新 (跨使用者整合)
+    print("\n步驟 4: 執行跨使用者睡眠整合...")
     await sleep_update_consolidator(section_id)
     
-    # 4. 驗證長期記憶
-    consolidated_history = await memory_db.get_relevant_memory(section_id, "雷射")
+    # 5. 驗證長期記憶 (Consolidated)
+    print("\n步驟 5: 驗證固化後的長期記憶...")
+    consolidated_history = await memory_db.get_relevant_memory(section_id, "Heater block")
     print(f"整合後的長期記憶:\n{consolidated_history}")
-    assert "[consolidated" in consolidated_history, "應存在整合後的長期記憶條目"
     
-    print("\n=== 黃光設備課 [共享記憶] 測試成功完成 ===")
+    assert "[consolidated" in consolidated_history, "應存在整合後的長期記憶條目"
+    assert "Heater" in consolidated_history or "阻值" in consolidated_history, "長期記憶應包含 Heater 或阻值等關鍵資訊"
+    
+    print("\n=== 黃光設備課 [共享記憶] 測試成功完成 (New Data) ===")
 
 if __name__ == "__main__":
     try:

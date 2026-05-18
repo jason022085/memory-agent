@@ -39,7 +39,7 @@ async def retrieval_node(state: FabAgentState):
 
 async def diagnostic_agent_node(state: FabAgentState):
     """Performs diagnosis based on equipment data and retrieved history"""
-    prompt = f"""You are a semiconductor equipment diagnostic expert.
+    prompt = f"""你是一個半導體設備分析專家.
 Current Area/Section: {state['section_id']}
 User ID: {state['user_id']}
 
@@ -49,7 +49,8 @@ Past Knowledge & Logs:
 Latest Equipment Data:
 {state['equipment_data']}
 
-Analyze the situation and provide diagnostic suggestions.
+分析以上資訊，提供專業的診斷建議和可能的解決方案。
+請根據設備數據和過去的相關記錄，提出可能的問題原因。
 """
     # Create the message list for the LLM
     inputs = [HumanMessage(content=prompt)] + state["messages"]

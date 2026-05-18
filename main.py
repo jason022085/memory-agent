@@ -3,69 +3,97 @@ from agent import run_agent
 from worker import sleep_update_consolidator
 
 async def main():
-    # 情境：黃光設備課，兩位工程師 Jason 與 Kevin 在同一區工作
+    # 情境：黃光設備課 (PHOTO_LITHO_01)
     section_id = "PHOTO_LITHO_01"
     
-    # 1. 工程師 Jason 處理 ASML_08 的 Overlay 偏移
-    user_a = "eng_jason"
-    equipment_data_a = {
-        "tool_id": "SCANNER_ASML_08",
-        "alarm_id": "ALID_204",
-        "error_msg": "Overlay Offset Out of Range (X-axis)",
-        "reading": "+15nm"
-    }
-    
-    print(f"--- [User: {user_a}] 處理 ASML_08 異常 ---")
-    response_a = await run_agent(
-        user_a, 
-        section_id, 
-        equipment_data_a, 
-        "ASML 08 發生 Overlay 偏移，我檢查了冷卻水溫發現異常偏高 (23.5C)，這可能是主因嗎？",
-        "session_a_001"
-    )
-    print(f"Agent: {response_a}\n")
-    
-    # 2. 幾小時後，工程師 Kevin 接班，處理另一台機台 ASML_05
-    user_b = "eng_kevin"
-    equipment_data_b = {
-        "tool_id": "SCANNER_ASML_05",
-        "alarm_id": "ALID_204",
-        "error_msg": "Overlay Offset Out of Range"
-    }
-    
-    print(f"--- [User: {user_b}] 接班處理 ASML_05 異常 ---")
-    response_b = await run_agent(
-        user_b, 
-        section_id, 
-        equipment_data_b, 
-        "我是 Kevin，ASML 05 也出現 Overlay 偏移，同課成員之前有處理過類似情況嗎？",
-        "session_b_001"
-    )
-    print(f"Agent: {response_b}\n")
+    # 定義 5 個詳細測資
+    test_cases = [
+        {
+            "user_id": "eng_jason",
+            "user_message": "機台 LITH-SCA-04 發生 Dose Energy OOC (Out of Control) Alarm。PE 抱怨近三天該機台的 Dose baseline 似乎有飄移 (Drifting)，跟一個月前的 Chart 比較，Average 掉了約 2%。",
+            "equipment_data": {
+                "tool_id": "LITH-SCA-04",
+                "alarm_type": "Dose Energy OOC",
+                "tool_investigation": "Check FDC chart 發現 Dose energy 確實在三天前的 PM 後出現 step change 下降。調閱機台 log，確認是 Laser gas 交換後，chamber 內的 pressure tuning 沒有達到最佳化。"
+            }
+        },
+        {
+            "user_id": "eng_kevin",
+            "user_message": "LITH-SCA-09 跑出來的貨 Overlay 異常，且 Y 軸向的誤差特別大。檢查機台參數，發現 Wafer Stage 的 MSD (Moving Standard Deviation) 在 Y 軸方向的 peak 值偏高。",
+            "equipment_data": {
+                "tool_id": "LITH-SCA-09",
+                "symptom": "Overlay Y-axis MSD peak high",
+                "diagnostic_result": "Y 軸的 Air bearing (氣浮軸承) 壓力有異常波動。發現其中一條 Air tube 有微小破損導致漏氣，造成浮力不穩。"
+            }
+        },
+        {
+            "user_id": "eng_mike",
+            "user_message": "黃光 CD (臨界尺寸) 變異度變大。ADC 抓到的 CD variation 高度集中在 LITH-TRK-12 的 PEB (Post Exposure Bake) Chamber 3。懷疑是 PEB 溫度均勻度 (Temp Uniformity) 跑掉。",
+            "equipment_data": {
+                "tool_id": "LITH-TRK-12",
+                "issue": "CD variation in PEB CH3",
+                "sensor_wafer_result": "Bake plate 的 Zone 4 (左下角) 溫度比 target 溫度低了 0.5度。檢查該 Zone 的 Heater resistance，發現阻值偏高，判定是 Heater 老化。"
+            }
+        },
+        {
+            "user_id": "eng_jason",
+            "user_message": "LITH-TRK-05 的 Daily dummy particle count 呈現上升趨勢 (Trending up)。ADC 分類顯示多為水痕 (Watermark) 與圓形微粒，且集中在 Wafer Edge (邊緣)。",
+            "equipment_data": {
+                "tool_id": "LITH-TRK-05",
+                "alarm": "Particle count trending up",
+                "visual_inspection": "EBR nozzle 在關閉時，確實有微小液滴殘留並甩到 wafer 邊緣。調整 EBR nozzle 的 Suck-back pressure 參數並清潔 nozzle head。"
+            }
+        },
+        {
+            "user_id": "eng_kevin",
+            "user_message": "LITH-TRK-02 剛做完季保養 (Quarterly PM)，更換了光阻幫浦 (Dispense Pump) 的 Filter。但 PM 後的 Qual wafer 一直過不了，光阻厚度 (Thickness) chart 出現雜訊，且表面疑似有微小氣泡。",
+            "equipment_data": {
+                "tool_id": "LITH-TRK-02",
+                "status": "Post-PM Qual fail",
+                "root_cause": "Purge 不完全導致管路內有空氣。學弟設定的 Purge count 只有 50 次，少於 SOP 規定的 100 次。"
+            }
+        }
+    ]
 
-    print(">>> 暫停點：請開啟 Dashboard (http://127.0.0.1:8000) 觀察「原始日誌 (Raw Log)」")
-    print(">>> 你會看到 Jason 與 Kevin 的對話已被記錄。")
-    input("請按 Enter 鍵繼續，執行睡眠更新 (整合知識)...")
+    print(f"=== 開始 5 組設備異常處理模擬 (Section: {section_id}) ===\n")
 
-    # 3. 觸發睡眠更新 (將兩人的經驗整合為課室長期知識)
-    print("\n--- 觸發睡眠更新 (整合 Jason 與 Kevin 的課室經驗) ---")
+    for i, case in enumerate(test_cases, 1):
+        print(f"--- [案例 {i}] 使用者: {case['user_id']} ---")
+        print(f"問題: {case['user_message']}")
+        
+        response = await run_agent(
+            case['user_id'],
+            section_id,
+            case['equipment_data'],
+            case['user_message'],
+            f"session_case_{i}"
+        )
+        print(f"Agent 回應: {response}\n")
+
+    print(">>> 暫停點：所有原始日誌已寫入。")
+    input("請按 Enter 鍵繼續，執行睡眠更新 (整合 5 組案例知識)...")
+
+    # 3. 觸發睡眠更新
+    print("\n--- 觸發睡眠更新 (整合跨工程師的經驗) ---")
     await sleep_update_consolidator(section_id)
 
-    print(">>> 觀察點：再次重新整理 Dashboard")
-    print(">>> 你會發現原始日誌已消失，取而代之的是綠色的「已固化知識 (Consolidated)」卡片。")
-    input("請按 Enter 鍵繼續，測試第三位工程師的檢索...")
+    print("\n>>> 觀察點：知識已固化。執行最終驗證查詢...")
+    input("請按 Enter 鍵繼續，測試 Agent 的知識提取...")
     
-    # 4. 第三位工程師 Mike 隔日上班
-    user_c = "eng_mike"
-    print(f"--- [User: {user_c}] 隔日上班查詢 ---")
-    response_c = await run_agent(
-        user_c, 
+    # 4. 驗證查詢
+    query_user = "eng_manager"
+    query_msg = "請總結近期關於 Scanner (SCA) 與 Track (TRK) 設備的主要異常事件與對策。"
+    print(f"--- [驗證查詢] 使用者: {query_user} ---")
+    print(f"查詢內容: {query_msg}")
+    
+    response_final = await run_agent(
+        query_user, 
         section_id, 
         {}, 
-        "總結一下昨天黃光 01 線關於 Overlay 偏移的處理經驗。",
-        "session_c_001"
+        query_msg,
+        "session_final_001"
     )
-    print(f"Agent: {response_c}\n")
+    print(f"Agent 總結回應: {response_final}\n")
 
 if __name__ == "__main__":
     asyncio.run(main())

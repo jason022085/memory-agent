@@ -3,6 +3,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from memory import FabMemory
 import os
+import json
 
 app = FastAPI(title="Semiconductor Agent Memory Dashboard")
 templates = Jinja2Templates(directory="templates")
@@ -16,15 +17,25 @@ async def dashboard(request: Request, section_id: str = "PHOTO_LITHO_01"):
     memories = []
     if results['documents']:
         for doc, meta in zip(results['documents'], results['metadatas']):
+            mem_type = meta.get("type")
+            parsed_content = doc
+            
+            # If the memory is consolidated, parse the JSON string so the template can bind it
+            if mem_type == "consolidated":
+                try:
+                    parsed_content = json.loads(doc)
+                except Exception:
+                    pass
+                    
             memories.append({
-                "content": doc,
+                "content": parsed_content,
                 "timestamp": meta.get("timestamp"),
-                "type": meta.get("type"),
+                "type": mem_type,
                 "user_id": meta.get("user_id", "system")
             })
     
     # 按照時間排序 (由新到舊)
-    memories.sort(key=lambda x: x['timestamp'], reverse=True)
+    memories.sort(key=lambda x: x['timestamp'] if x['timestamp'] else 0, reverse=True)
 
     return templates.TemplateResponse(
         request=request, 
@@ -38,3 +49,4 @@ async def dashboard(request: Request, section_id: str = "PHOTO_LITHO_01"):
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="127.0.0.1", port=8000)
+

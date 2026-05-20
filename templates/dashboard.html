@@ -3,157 +3,654 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>半導體代理 - 區域記憶看板</title>
+    <title>半導體雙軌共享記憶看板 (Litho Agent Dashboard)</title>
+    <!-- Modern Premium Typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary-color: #003366;
-            --secondary-color: #f0f4f8;
-            --accent-color: #00a8e8;
-            --text-color: #333;
-            --card-bg: #ffffff;
-            --raw-log-color: #ffc107;
-            --consolidated-color: #28a745;
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #020617 100%);
+            --glass-bg: rgba(30, 41, 59, 0.55);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --accent-primary: #38bdf8; /* Sky blue */
+            --accent-green: #34d399; /* Emerald */
+            --accent-amber: #fbbf24; /* Amber */
+            --accent-rose: #f87171; /* Rose */
+            --text-main: #f8fafc;
+            --text-secondary: #94a3b8;
+            --card-consolidated-border: rgba(52, 211, 153, 0.25);
+            --card-raw-border: rgba(251, 191, 36, 0.2);
         }
+
+        * {
+            box-sizing: border-box;
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
         body {
-            font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif;
-            background-color: var(--secondary-color);
-            color: var(--text-color);
+            font-family: 'Inter', 'Segoe UI', 'Microsoft JhengHei', sans-serif;
+            background: var(--bg-gradient);
+            color: var(--text-main);
             margin: 0;
-            padding: 20px;
+            padding: 40px 20px;
+            min-height: 100vh;
+            background-attachment: fixed;
         }
-        .container { max-width: 1000px; margin: 0 auto; }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        /* Premium Glass Header */
         header {
-            background-color: var(--primary-color);
-            color: white;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            padding: 24px 32px;
+            border-radius: 16px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 20px;
         }
-        h1 { margin: 0; font-size: 22px; }
-        .section-info {
-            background: var(--card-bg);
-            padding: 12px 20px;
-            border-left: 5px solid var(--accent-color);
-            margin-bottom: 20px;
-            font-weight: bold;
-            border-radius: 4px;
+
+        .header-title h1 {
+            font-family: 'Outfit', sans-serif;
+            margin: 0;
+            font-size: 26px;
+            font-weight: 700;
+            background: linear-gradient(to right, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
         }
-        
-        /* 摺疊卡片樣式 */
-        .memory-card {
-            background: var(--card-bg);
-            border-radius: 8px;
-            margin-bottom: 12px;
-            border: 1px solid #ddd;
-            overflow: hidden;
-            transition: all 0.2s ease;
+
+        .header-title p {
+            margin: 6px 0 0 0;
+            color: var(--text-secondary);
+            font-size: 13px;
+            letter-spacing: 0.5px;
         }
-        .memory-card:hover {
-            border-color: var(--accent-color);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+
+        .section-badge {
+            background: rgba(56, 189, 248, 0.1);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            color: var(--accent-primary);
+            padding: 8px 16px;
+            border-radius: 9999px;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
         }
-        
-        .card-header {
-            padding: 15px 20px;
+
+        /* Filter Controls */
+        .filter-bar {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            background: rgba(30, 41, 59, 0.4);
+            border: 1px solid var(--glass-border);
+            color: var(--text-secondary);
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-weight: 500;
+            font-size: 13px;
             cursor: pointer;
+            backdrop-filter: blur(10px);
+        }
+
+        .filter-btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+            transform: translateY(-2px);
+        }
+
+        .filter-btn.active {
+            background: rgba(56, 189, 248, 0.15);
+            border-color: var(--accent-primary);
+            color: var(--accent-primary);
+            box-shadow: 0 4px 12px -2px rgba(56, 189, 248, 0.25);
+        }
+
+        /* Cards List Wrapper with animation */
+        .memory-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* General Card Base Styles */
+        .memory-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 14px;
+            border: 1px solid var(--glass-border);
+            overflow: hidden;
+            box-shadow: 0 10px 25px -10px rgba(0, 0, 0, 0.3);
+            transform-origin: top center;
+        }
+
+        .memory-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.4);
+        }
+
+        /* 1. Styled Consolidated SOP Card */
+        .card-consolidated {
+            border-left: 5px solid var(--accent-green);
+            border-color: var(--card-consolidated-border);
+        }
+
+        .card-consolidated:hover {
+            border-color: var(--accent-green);
+        }
+
+        .sop-header {
+            padding: 24px 30px 18px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            flex-wrap: wrap;
+            gap: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .sop-title-block h3 {
+            margin: 0;
+            font-family: 'Outfit', sans-serif;
+            font-size: 20px;
+            font-weight: 600;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sop-area-tag {
+            background: rgba(52, 211, 153, 0.1);
+            color: var(--accent-green);
+            border: 1px solid rgba(52, 211, 153, 0.2);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .sop-meta-right {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .badge-confidence {
+            padding: 5px 12px;
+            border-radius: 9999px;
+            font-size: 11px;
+            font-weight: 600;
+            border: 1px solid transparent;
+        }
+
+        .conf-high {
+            background: rgba(52, 211, 153, 0.1);
+            color: var(--accent-green);
+            border-color: rgba(52, 211, 153, 0.2);
+        }
+
+        .conf-medium {
+            background: rgba(251, 191, 36, 0.1);
+            color: var(--accent-amber);
+            border-color: rgba(251, 191, 36, 0.2);
+        }
+
+        .conf-low {
+            background: rgba(248, 113, 113, 0.1);
+            color: var(--accent-rose);
+            border-color: rgba(248, 113, 113, 0.2);
+        }
+
+        .badge-type-consolidated {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #ffffff;
+            padding: 5px 12px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 700;
+            box-shadow: 0 4px 10px rgba(16, 185, 129, 0.25);
+        }
+
+        .sop-body {
+            padding: 24px 30px;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        @media (min-width: 768px) {
+            .sop-body {
+                grid-template-columns: 1fr 1fr;
+            }
+            .sop-section-full {
+                grid-column: span 2;
+            }
+        }
+
+        .sop-section {
+            background: rgba(15, 23, 42, 0.25);
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            border-radius: 12px;
+            padding: 18px 20px;
+        }
+
+        .sop-section h4 {
+            margin: 0 0 10px 0;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .title-symptom { color: var(--accent-primary); }
+        .title-rootcause { color: var(--accent-rose); }
+        .title-sop { color: var(--accent-green); }
+        .title-preventive { color: var(--accent-amber); }
+
+        .sop-text {
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--text-main);
+            margin: 0;
+        }
+
+        /* Interactive Checklist for Action Steps */
+        .checklist-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .checklist-checkbox {
+            width: 18px;
+            height: 18px;
+            border-radius: 4px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            margin-top: 2px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            font-size: 10px;
+            font-weight: bold;
+            color: transparent;
+        }
+
+        .checklist-item:hover .checklist-checkbox {
+            border-color: var(--accent-green);
+            background: rgba(52, 211, 153, 0.1);
+        }
+
+        .checklist-item.checked .checklist-checkbox {
+            background: var(--accent-green);
+            border-color: var(--accent-green);
+            color: #0f172a;
+        }
+
+        .checklist-text {
+            font-size: 13.5px;
+            line-height: 1.5;
+            color: var(--text-main);
+        }
+
+        .checklist-item.checked .checklist-text {
+            text-decoration: line-through;
+            color: var(--text-secondary);
+        }
+
+        /* Preventive items list */
+        .preventive-list {
+            margin: 0;
+            padding-left: 18px;
+        }
+
+        .preventive-list li {
+            font-size: 13.5px;
+            line-height: 1.6;
+            margin-bottom: 6px;
+            color: var(--text-main);
+        }
+
+        .sop-footer {
+            background: rgba(15, 23, 42, 0.3);
+            padding: 14px 30px;
+            border-top: 1px solid rgba(255, 255, 255, 0.04);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            user-select: none;
-            background-color: #fff;
+            flex-wrap: wrap;
+            gap: 15px;
         }
-        .card-header:hover { background-color: #f9f9f9; }
-        
-        .header-main { display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
-        
-        .card-content {
-            display: none; /* 預設隱藏 */
-            padding: 20px;
-            background-color: #fafafa;
-            border-top: 1px solid #eee;
-            white-space: pre-wrap;
-            line-height: 1.6;
+
+        .footer-left {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
         }
-        
-        .badge {
-            padding: 3px 10px;
-            border-radius: 20px;
+
+        .label-meta {
             font-size: 11px;
-            font-weight: bold;
-            color: white;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-transform: uppercase;
         }
-        .badge-consolidated { background-color: var(--consolidated-color); }
-        .badge-raw { background-color: var(--raw-log-color); color: #000; }
-        
-        .arrow {
-            transition: transform 0.3s ease;
+
+        .user-tag {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: var(--text-main);
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11.5px;
+            font-weight: 600;
+        }
+
+        .session-ref {
+            background: rgba(56, 189, 248, 0.08);
+            border: 1px solid rgba(56, 189, 248, 0.15);
+            color: var(--accent-primary);
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-family: monospace;
+        }
+
+        .timestamp {
             font-size: 12px;
-            color: #999;
+            color: var(--text-secondary);
         }
-        .expanded .card-content { display: block; }
-        .expanded .arrow { transform: rotate(180deg); }
-        
-        .timestamp { color: #666; font-size: 13px; }
-        .user-tag { font-weight: bold; color: var(--primary-color); }
-        
+
+        /* 2. Styled Raw Log Card (Terminal look) */
+        .card-raw {
+            border-left: 5px solid var(--accent-amber);
+            border-color: var(--card-raw-border);
+        }
+
+        .card-raw:hover {
+            border-color: var(--accent-amber);
+        }
+
+        .raw-header {
+            padding: 18px 24px;
+            background: rgba(15, 23, 42, 0.4);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .raw-header-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .badge-type-raw {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: #000000;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 10px;
+            font-weight: 800;
+            box-shadow: 0 4px 10px rgba(245, 158, 11, 0.25);
+        }
+
+        .raw-author {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--accent-amber);
+        }
+
+        .raw-body {
+            padding: 20px 24px;
+            background: rgba(2, 6, 17, 0.4);
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 13.5px;
+            line-height: 1.6;
+            color: #f1f5f9;
+            white-space: pre-wrap;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        /* No data indicator */
         .no-data {
             text-align: center;
-            padding: 50px;
-            color: #999;
-            background: white;
-            border-radius: 8px;
+            padding: 80px 40px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            color: var(--text-secondary);
+        }
+
+        .no-data svg {
+            width: 48px;
+            height: 48px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .no-data h3 {
+            margin: 0;
+            color: var(--text-main);
+            font-size: 18px;
+        }
+
+        .no-data p {
+            margin: 8px 0 0 0;
+            font-size: 14px;
         }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- Premium glassmorphic header -->
         <header>
-            <h1>黃光設備課：知識管理看板 (Litho Agent Dashboard)</h1>
+            <div class="header-title">
+                <h1>黃光設備課：雙軌共享記憶管理看板</h1>
+                <p>Lithography Agent - Dual-Track Shared Knowledge & Logs</p>
+            </div>
+            <div class="section-badge">
+                區域代碼: {{ section_id }}
+            </div>
         </header>
 
-        <div class="section-info">
-            當前檢視 section: <span style="color: var(--accent-color);">{{ section_id }}</span>
+        <!-- Dynamic Filter Controls -->
+        <div class="filter-bar">
+            <button class="filter-btn active" onclick="applyFilter('all', this)">顯示全部 (Show All)</button>
+            <button class="filter-btn" onclick="applyFilter('consolidated', this)">已固化 SOP (Solidified SOPs)</button>
+            <button class="filter-btn" onclick="applyFilter('raw_log', this)">原始事件日誌 (Raw Telemetry Logs)</button>
         </div>
 
-        {% if memories %}
-            {% for mem in memories %}
-                <div class="memory-card" id="card-{{loop.index}}">
-                    <div class="card-header" onclick="toggleCard({{loop.index}})">
-                        <div class="header-main">
-                            {% if mem.type == 'consolidated' %}
-                                <span class="badge badge-consolidated">已固化知識</span>
-                            {% else %}
-                                <span class="badge badge-raw">原始日誌</span>
-                            {% endif %}
-                            <span class="user-tag">@{{ mem.user_id }}</span>
-                            <span class="timestamp" data-ts="{{ mem.timestamp }}"></span>
+        <!-- Render Memories List -->
+        <div class="memory-list">
+            {% if memories %}
+                {% for mem in memories %}
+                    {% if mem.type == 'consolidated' %}
+                        <!-- Troubleshooting SOP Card -->
+                        <div class="memory-card card-consolidated" data-type="consolidated">
+                            <div class="sop-header">
+                                <div class="sop-title-block">
+                                    <h3>
+                                        <svg style="width: 20px; height: 20px; color: var(--accent-green);" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                                        </svg>
+                                        {{ mem.content.alarm_id }}
+                                        <span class="sop-area-tag">{{ mem.content.process_area }}</span>
+                                    </h3>
+                                </div>
+                                <div class="sop-meta-right">
+                                    <!-- Confidence Badge -->
+                                    {% if 'High' in mem.content.confidence_level %}
+                                        <span class="badge-confidence conf-high">{{ mem.content.confidence_level }}</span>
+                                    {% elif 'Medium' in mem.content.confidence_level %}
+                                        <span class="badge-confidence conf-medium">{{ mem.content.confidence_level }}</span>
+                                    {% else %}
+                                        <span class="badge-confidence conf-low">{{ mem.content.confidence_level }}</span>
+                                    {% endif %}
+                                    <span class="badge-type-consolidated">已固化知識</span>
+                                </div>
+                            </div>
+                            <div class="sop-body">
+                                <!-- Symptom Section -->
+                                <div class="sop-section">
+                                    <h4 class="title-symptom">
+                                        <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                                        故障異常徵兆 (Symptom)
+                                    </h4>
+                                    <p class="sop-text">{{ mem.content.symptom_description }}</p>
+                                </div>
+                                <!-- Root Cause Section -->
+                                <div class="sop-section">
+                                    <h4 class="title-rootcause">
+                                        <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                                        根本原因分析 (Physical Root Cause)
+                                    </h4>
+                                    <p class="sop-text">{{ mem.content.root_cause }}</p>
+                                </div>
+                                <!-- SOP Steps Section (Interactive checklist) -->
+                                <div class="sop-section sop-section-full">
+                                    <h4 class="title-sop">
+                                        <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"></path></svg>
+                                        標準作業處置步驟 (Verified SOP checklist)
+                                    </h4>
+                                    <div>
+                                        {% for step in mem.content.resolution_steps %}
+                                            <div class="checklist-item" onclick="toggleChecklist(this)">
+                                                <div class="checklist-checkbox">✔</div>
+                                                <div class="checklist-text">{{ step }}</div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                                <!-- Preventive Recommendations -->
+                                <div class="sop-section sop-section-full">
+                                    <h4 class="title-preventive">
+                                        <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                                        預防性維護對策 (Preventive Actions)
+                                    </h4>
+                                    <ul class="preventive-list">
+                                        {% for act in mem.content.preventive_actions %}
+                                            <li>{{ act }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                            </div>
+                            <!-- Metadata footer -->
+                            <div class="sop-footer">
+                                <div class="footer-left">
+                                    <span class="label-meta">貢獻工程師:</span>
+                                    {% for eng in mem.content.engineers_involved %}
+                                        <span class="user-tag">@{{ eng }}</span>
+                                    {% endfor %}
+                                    <span style="width: 2px; height: 12px; background: rgba(255,255,255,0.1); margin: 0 10px;"></span>
+                                    <span class="label-meta">關聯日誌軌跡:</span>
+                                    {% for ref in mem.content.session_references %}
+                                        <span class="session-ref">{{ ref }}</span>
+                                    {% endfor %}
+                                </div>
+                                <span class="timestamp" data-ts="{{ mem.timestamp }}"></span>
+                            </div>
                         </div>
-                        <div class="arrow">▼</div>
-                    </div>
-                    <div class="card-content">{{ mem.content }}</div>
+                    {% elif mem.type == 'raw_log' %}
+                        <!-- Raw Log Card -->
+                        <div class="memory-card card-raw" data-type="raw_log">
+                            <div class="raw-header">
+                                <div class="raw-header-title">
+                                    <span class="badge-type-raw">Raw telemetry</span>
+                                    <span class="raw-author">工程師 @{{ mem.user_id }}</span>
+                                </div>
+                                <span class="timestamp" data-ts="{{ mem.timestamp }}"></span>
+                            </div>
+                            <div class="raw-body">{{ mem.content }}</div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            {% else %}
+                <div class="no-data">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
+                    </svg>
+                    <h3>目前無記憶資料 (No Data)</h3>
+                    <p>請執行 <code>main.py</code> 產生對話或觸發背景睡眠整合更新。</p>
                 </div>
-            {% endfor %}
-        {% else %}
-            <div class="no-data">
-                目前尚無記憶資料。請執行 main.py 以產生對話或睡眠整合。
-            </div>
-        {% endif %}
+            {% endif %}
+        </div>
     </div>
 
+    <!-- Interactive Client JavaScript -->
     <script>
-        // 摺疊開關
-        function toggleCard(index) {
-            const card = document.getElementById('card-' + index);
-            card.classList.toggle('expanded');
+        // Client-side dynamic filtering
+        function applyFilter(type, buttonEl) {
+            // Remove active classes from buttons
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            // Add active class to clicked button
+            buttonEl.classList.add('active');
+
+            const cards = document.querySelectorAll('.memory-card');
+            cards.forEach(card => {
+                const cardType = card.getAttribute('data-type');
+                if (type === 'all' || cardType === type) {
+                    card.style.display = 'block';
+                    // Delay slightly to trigger transition
+                    setTimeout(() => {
+                        card.style.opacity = '1';
+                        card.style.transform = 'scale(1)';
+                    }, 50);
+                } else {
+                    card.style.opacity = '0';
+                    card.style.transform = 'scale(0.96)';
+                    // Set display none after fade-out transition
+                    setTimeout(() => {
+                        card.style.display = 'none';
+                    }, 250);
+                }
+            });
         }
 
-        // 時間格式化
+        // Toggle Checklist Item (Checked vs Unchecked)
+        function toggleChecklist(itemEl) {
+            itemEl.classList.toggle('checked');
+        }
+
+        // Standardize Timestamp Format
         document.querySelectorAll('.timestamp').forEach(el => {
             const ts = parseInt(el.getAttribute('data-ts'));
             if (ts) {
                 const date = new Date(ts);
-                el.innerText = date.toLocaleString('zh-TW');
+                el.innerText = date.toLocaleString('zh-TW', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: false
+                });
             }
         });
     </script>
